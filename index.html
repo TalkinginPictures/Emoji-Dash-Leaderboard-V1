@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emoji Sprint</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #f0f0f0;
+    }
+    #game {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .emoji {
+      font-size: 8rem;
+      margin: 10px;
+    }
+    .btn {
+      font-size: 8rem;
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: black;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn:disabled {
+      background: #ccc;
+    }
+    .small-btn {
+      font-size: 2rem;
+      padding: 8px 16px;
+      margin-top: 10px;
+    }
+    #leaderboard {
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
+  <!-- Firebase App (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9Bo6grrU8Pl_bMhZlXE-ysMAKaSJx0do",
+      authDomain: "emojisprintgame.firebaseapp.com",
+      databaseURL: "https://emojisprintgame-default-rtdb.firebaseio.com",
+      projectId: "emojisprintgame",
+      storageBucket: "emojisprintgame.appspot.com",
+      messagingSenderId: "467853329199",
+      appId: "1:467853329199:web:90a6c8fdfdbe57989b17da",
+      measurementId: "G-RY6C9HEBT2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
+</head>
+<body>
+  <div id="game">
+    <h2>Emoji Sprint</h2>
+    <p>Credits: <span id="credits">5</span></p>
+    <p>Plays left in this credit: <span id="playsLeft">5</span></p>
+    <p id="instructions">Memorise the sequence:</p>
+    <div id="emoji-sequence"></div>
+    <div id="emoji-options"></div>
+    <button class="btn small-btn" id="start-btn">Start</button>
+    <p id="score"></p>
+    <div id="round-summary"></div>
+    <div id="leaderboard"></div>
+  </div>
+
+  <script>
+    const emojis = ['😀','🎉','🚀','🍕','🐱','🌟','🔥','💡','🎯','📚'];
+    let sequence = [];
+    let userInput = [];
+    let credits = 5;
+    let playsLeft = 5;
+    let startTime;
+    let roundScores = [];
+
+    const sequenceEl = document.getElementById('emoji-sequence');
+    const optionsEl = document.getElementById('emoji-options');
+    const scoreEl = document.getElementById('score');
+    const creditsEl = document.getElementById('credits');
+    const playsLeftEl = document.getElementById('playsLeft');
+    const startBtn = document.getElementById('start-btn');
+    const summaryEl = document.getElementById('round-summary');
+    const leaderboardEl = document.getElementById('leaderboard');
+
+    function shuffle(array) {
+      return [...array].sort(() => Math.random() - 0.5);
+    }
+
+    function updateCreditsDisplay() {
+      creditsEl.textContent = credits;
+      playsLeftEl.textContent = playsLeft;
+    }
+
+    function showSequence() {
+      sequence = shuffle(emojis).slice(0, 5);
+      sequenceEl.innerHTML = sequence.map(e => `<span class="emoji">${e}</span>`).join('');
+      setTimeout(() => {
+        sequenceEl.innerHTML = '';
+        showOptions();
+      }, 2000);
+    }
+
+    function showOptions() {
+      optionsEl.innerHTML = '';
+      userInput = [];
+      document.getElementById('instructions').textContent = 'Tap in order:';
+      const shuffled = shuffle(sequence);
+      shuffled.forEach(e => {
+        const btn = document.createElement('button');
+        btn.textContent = e;
+        btn.className = 'btn';
+        btn.onclick = () => handleInput(e);
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function handleInput(emoji) {
+      userInput.push(emoji);
+      if (userInput.length === sequence.length) {
+        endGame();
+      }
+    }
+
+    function endGame() {
+      const correct = userInput.every((e, i) => e === sequence[i]);
+      const timeTaken = (Date.now() - startTime) / 1000;
+      let score = 0;
+      if (correct) {
+        score = Math.max(100 - timeTaken * 10, 10);
+        scoreEl.textContent = `✅ Correct! Time: ${timeTaken.toFixed(2)}s | Score: ${Math.round(score)}`;
+      } else {
+        scoreEl.textContent = `❌ Incorrect. Try again!`;
+      }
+      roundScores.push({ correct, score: Math.round(score), time: timeTaken });
+      playsLeft--;
+      if (playsLeft <= 0) {
+        credits--;
+        playsLeft = 5;
+        showRoundSummary();
+        roundScores = [];
+      }
+      updateCreditsDisplay();
+      startBtn.disabled = false;
+    }
+
+    function showRoundSummary() {
+      const total = roundScores.reduce((sum, s) => sum + s.score, 0);
+      let name = prompt("Enter your name for the leaderboard:");
+      if (!name) name = "Anonymous";
+      db.ref('leaderboard').push({ name, total, timestamp: Date.now() });
+      let summaryHTML = `<h3>Round Summary</h3><ul>`;
+      roundScores.forEach((s, i) => {
+        summaryHTML += `<li>Play ${i + 1}: ${s.correct ? '✅' : '❌'} Score: ${s.score}, Time: ${s.time.toFixed(2)}s</li>`;
+      });
+      summaryHTML += `</ul><strong>Total Round Score: ${total}</strong><br />`;
+      summaryHTML += `<button class='btn small-btn' onclick='startNewRound()'>Start New Round</button>`;
+      summaryEl.innerHTML = summaryHTML;
+      renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+      db.ref('leaderboard').orderByChild('total').limitToLast(10).once('value', snapshot => {
+        const entries = [];
+        snapshot.forEach(child => {
+          entries.push(child.val());
+        });
+        entries.reverse();
+        let lbHTML = `<h3>🏆 Global Leaderboard</h3><ol>`;
+        entries.forEach(entry => {
+          lbHTML += `<li>${entry.name}: ${entry.total}</li>`;
+        });
+        lbHTML += `</ol>`;
+        leaderboardEl.innerHTML = lbHTML;
+      });
+    }
+
+    function startNewRound() {
+      if (credits <= 0) return alert('Out of credits!');
+      updateCreditsDisplay();
+      startTime = Date.now();
+      scoreEl.textContent = '';
+      sequenceEl.innerHTML = '';
+      optionsEl.innerHTML = '';
+      summaryEl.innerHTML = '';
+      document.getElementById('instructions').textContent = 'Memorise the sequence:';
+      showSequence();
+    }
+
+    startBtn.onclick = () => {
+      if (credits <= 0) return alert('Out of credits!');
+      updateCreditsDisplay();
+      startTime = Date.now();
+      scoreEl.textContent = '';
+      sequenceEl.innerHTML = '';
+      optionsEl.innerHTML = '';
+      summaryEl.innerHTML = '';
+      document.getElementById('instructions').textContent = 'Memorise the sequence:';
+      startBtn.disabled = true;
+      showSequence();
+    };
+
+    renderLeaderboard();
+  </script>
+</body>
+</html>
