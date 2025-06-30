@@ -171,37 +171,55 @@
 
     function showRoundSummary() {
       const total = roundScores.reduce((sum, s) => sum + s.score, 0);
+      const safeTotal = isNaN(total) ? 0 : Math.round(total);
       let name = prompt("Enter your name for the leaderboard:");
       if (!name) name = "Anonymous";
-      db.ref('leaderboard').push({
-        name,
-        total: Number(total),
-        timestamp: Date.now()
-      });
-      let summaryHTML = `<h3>Round Summary</h3><ul>`;
-      roundScores.forEach((s, i) => {
-        summaryHTML += `<li>Play ${i + 1}: ${s.correct ? '✅' : '❌'} Score: ${s.score}, Time: ${s.time.toFixed(2)}s</li>`;
-      });
-      summaryHTML += `</ul><strong>Total Round Score: ${total}</strong><br />`;
-      summaryHTML += `<button class='btn small-btn' onclick='startNewRound()'>Start New Round</button>`;
-      summaryEl.innerHTML = summaryHTML;
-      setTimeout(renderLeaderboard, 100); // Delay ensures leaderboard updates after write
+      db.ref('leaderboard')
+        .push({
+          name,
+          total: safeTotal,
+          timestamp: Date.now()
+        })
+        .then(() => {
+          let summaryHTML = `<h3>Round Summary</h3><ul>`;
+          roundScores.forEach((s, i) => {
+            summaryHTML += `<li>Play ${i + 1}: ${s.correct ? '✅' : '❌'} Score: ${s.score}, Time: ${s.time.toFixed(2)}s</li>`;
+          });
+          summaryHTML += `</ul><strong>Total Round Score: ${safeTotal}</strong><br />`;
+          summaryHTML += `<button class='btn small-btn' onclick='startNewRound()'>Start New Round</button>`;
+          summaryEl.innerHTML = summaryHTML;
+
+          renderLeaderboard();
+        })
+        .catch(error => {
+          console.error('Error saving to leaderboard:', error);
+          alert('Failed to save score. Please try again.');
+        });
     }
 
     function renderLeaderboard() {
-      db.ref('leaderboard').orderByChild('total').limitToLast(10).once('value').then(snapshot => {
-        const entries = [];
-        snapshot.forEach(child => {
-          entries.push(child.val());
+      leaderboardEl.innerHTML = `<p>Loading leaderboard...</p>`;
+      db.ref('leaderboard')
+        .orderByChild('total')
+        .limitToLast(10)
+        .once('value')
+        .then(snapshot => {
+          const entries = [];
+          snapshot.forEach(child => {
+            entries.push(child.val());
+          });
+          entries.reverse(); // Show highest first
+          let lbHTML = `<h3>🏆 Global Leaderboard (Top 10)</h3><ol>`;
+          entries.forEach(entry => {
+            lbHTML += `<li><strong>${entry.name}</strong>: ${entry.total || 0} pts</li>`;
+          });
+          lbHTML += `</ol>`;
+          leaderboardEl.innerHTML = lbHTML;
+        })
+        .catch(error => {
+          console.error('Error loading leaderboard:', error);
+          leaderboardEl.innerHTML = `<p>⚠️ Could not load leaderboard.</p>`;
         });
-        entries.reverse();
-        let lbHTML = `<h3>🏆 Global Leaderboard (Top 10)</h3><ol>`;
-        entries.forEach(entry => {
-          lbHTML += `<li><strong>${entry.name}</strong>: ${entry.total} pts</li>`;
-        });
-        lbHTML += `</ol>`;
-        leaderboardEl.innerHTML = lbHTML;
-      });
     }
 
     function startNewRound() {
@@ -213,6 +231,7 @@
       optionsEl.innerHTML = '';
       summaryEl.innerHTML = '';
       document.getElementById('instructions').textContent = 'Memorise the sequence:';
+      startBtn.disabled = true;
       showSequence();
     }
 
@@ -233,3 +252,4 @@
   </script>
 </body>
 </html>
+
