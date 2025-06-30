@@ -10,10 +10,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      justify-content: flex-start;
+      min-height: 100vh;
       margin: 0;
       background: #f0f0f0;
+      padding: 20px;
     }
     #game {
       background: #fff;
@@ -21,6 +22,8 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       text-align: center;
+      max-width: 600px;
+      width: 100%;
     }
     .emoji {
       font-size: 8rem;
@@ -47,6 +50,12 @@
     #leaderboard {
       margin-top: 20px;
       text-align: left;
+      background: #e6f2ff;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    #leaderboard h3 {
+      margin-top: 0;
     }
   </style>
   <!-- Firebase App (compat) -->
@@ -182,9 +191,9 @@
           entries.push(child.val());
         });
         entries.reverse();
-        let lbHTML = `<h3>🏆 Global Leaderboard</h3><ol>`;
+        let lbHTML = `<h3>🏆 Global Leaderboard (Top 10)</h3><ol>`;
         entries.forEach(entry => {
-          lbHTML += `<li>${entry.name}: ${entry.total}</li>`;
+          lbHTML += `<li><strong>${entry.name}</strong>: ${entry.total} pts</li>`;
         });
         lbHTML += `</ol>`;
         leaderboardEl.innerHTML = lbHTML;
@@ -220,3 +229,4 @@
   </script>
 </body>
 </html>
+
