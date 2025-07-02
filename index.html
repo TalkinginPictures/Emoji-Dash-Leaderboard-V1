@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emoji Sprint</title>
-  <style>
-    body {
-      font-family: sans-serif;
+ -serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -58,9 +56,8 @@
       margin-top: 0;
     }
   </style>
-  <!-- Firebase App (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js
+  https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyB9Bo6grrU8Pl_bMhZlXE-ysMAKaSJx0do",
@@ -218,38 +215,4 @@
         })
         .catch(error => {
           console.error('Error loading leaderboard:', error);
-          leaderboardEl.innerHTML = `<p>⚠️ Could not load leaderboard.</p>`;
-        });
-    }
-
-    function startNewRound() {
-      if (credits <= 0) return alert('Out of credits!');
-      updateCreditsDisplay();
-      startTime = Date.now();
-      scoreEl.textContent = '';
-      sequenceEl.innerHTML = '';
-      optionsEl.innerHTML = '';
-      summaryEl.innerHTML = '';
-      document.getElementById('instructions').textContent = 'Memorise the sequence:';
-      startBtn.disabled = true;
-      showSequence();
-    }
-
-    startBtn.onclick = () => {
-      if (credits <= 0) return alert('Out of credits!');
-      updateCreditsDisplay();
-      startTime = Date.now();
-      scoreEl.textContent = '';
-      sequenceEl.innerHTML = '';
-      optionsEl.innerHTML = '';
-      summaryEl.innerHTML = '';
-      document.getElementById('instructions').textContent = 'Memorise the sequence:';
-      startBtn.disabled = true;
-      showSequence();
-    };
-
-    window.addEventListener('load', renderLeaderboard);
-  </script>
-</body>
-</html>
-
+          leaderboardEl.innerHTML = `<p>⚠️
